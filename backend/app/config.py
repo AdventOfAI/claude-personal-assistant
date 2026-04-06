@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     )
 
     anthropic_api_key: str = os.environ.get("ANTHROPIC_API_KEY")
-    claude_model: str = "claude-sonnet-4-20250514"
+    claude_model: str = "claude-sonnet-4-5"
     data_dir: Path = Field(default_factory=_default_data_dir)
 
 

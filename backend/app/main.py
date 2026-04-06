@@ -157,3 +157,14 @@ if _VERCEL and PUBLIC_DIR.is_dir():
     app.mount("/", StaticFiles(directory=str(PUBLIC_DIR), html=True), name="public")
 elif not _VERCEL and FRONTEND_DIR.is_dir():
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+
+@app.get("/api/debug")
+async def debug():
+    import os
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    return {
+        "key_present": key is not None,
+        "key_prefix": key[:8] if key else None,
+        "vercel": os.environ.get("VERCEL"),
+        "model": settings.claude_model
+    }
