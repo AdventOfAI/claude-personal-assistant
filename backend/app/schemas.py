@@ -22,5 +22,9 @@ class ProfilePutRequest(BaseModel):
     profile: UserProfile
 
 
+class ChatResponse(BaseModel):
+    message: ChatMessage
+
+
 class ConversationResponse(BaseModel):
     messages: list[ChatMessage]

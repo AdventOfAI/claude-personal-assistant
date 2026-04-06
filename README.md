@@ -1,10 +1,10 @@
 # Personalised Assistant
 
-A small web chat app that uses **Claude** (Anthropic) on the backend, with light **personalisation**, **streaming replies**, optional **file context** (including PDFs), and **persisted profile + conversation** per browser.
+A small web chat app that uses **Claude** (Anthropic) on the backend, with light **personalisation**, optional **file context** (including PDFs), and **persisted profile + conversation** per browser.
 
 ## Features
 
-- **Claude via FastAPI** — Messages API with streaming (`text/event-stream` / SSE).
+- **Claude via FastAPI** — Messages API (non-streaming JSON response).
 - **Profile** — Display name, reply tone (brief / balanced / friendly / formal), “about you”, and extra instructions; injected into the system prompt and stored under `backend/data/profiles/`.
 - **Chat history** — Conversation saved server-side and reloaded on return (`backend/data/conversations/`). Clear with **Clear chat** in the UI.
 - **Anonymous identity** — A `client_id` UUID in `localStorage` ties profile + history to this browser (no login).
@@ -51,9 +51,9 @@ Open **http://127.0.0.1:8000** — the API and static UI are served together.
 ```
 backend/
   app/
-    main.py              # FastAPI routes, SSE chat, static mount
+    main.py              # FastAPI routes, chat API, static mount
     config.py            # Settings + .env
-    llm.py               # Claude streaming + system prompt
+    llm.py               # Claude Messages API + system prompt
     schemas.py           # Pydantic models
     profile_store.py     # JSON profiles per client_id
     conversation_store.py
@@ -62,7 +62,7 @@ backend/
   .env.example
 frontend/
   index.html
-  app.js                 # Chat UI, FormData + SSE client
+  app.js                 # Chat UI, multipart + JSON
   markdown.js            # Markdown + sanitize (CDN imports)
   styles.css
 build.py                 # Vercel build: copies frontend/ → public/
@@ -82,7 +82,7 @@ Data files (ignored by git) live under `backend/data/` locally, or `/tmp/pa-data
 | `GET` | `/api/health` | Health check |
 | `GET` / `PUT` | `/api/profile?client_id=…` | Read / update profile |
 | `GET` / `DELETE` | `/api/conversation?client_id=…` | Load / clear saved messages |
-| `POST` | `/api/chat/stream` | Multipart: `messages` (JSON string), `client_id`, optional `file`; SSE token stream |
+| `POST` | `/api/chat` | Multipart: `messages` (JSON string), `client_id`, optional `file`; JSON `{ "message": { "role", "content" } }` |
 
 Locally, static files are mounted from **`frontend/`** after API routes. On Vercel, **`build.py`** copies assets to **`public/`**, and the app **mounts `public/`** when `VERCEL` is set (otherwise `/` would hit FastAPI with no route and return **404**). The FastAPI app still handles **`/api/*`** first.
 
@@ -92,7 +92,7 @@ This repo includes a **zero-config style** layout compatible with [FastAPI on Ve
 
 1. **Root entrypoint** — **`main.py`** adds `backend/` to `sys.path` and exposes the FastAPI `app`. **`pyproject.toml`** includes **`[project.scripts] app = "main:app"`** so Vercel can resolve the app explicitly.
 2. **Project root** — In the Vercel dashboard, set **Root Directory** to the **repository root** (where `main.py` and `pyproject.toml` live), **not** `backend`. If you must use Root Directory `backend`, use **`backend/main.py`** as the file that defines `app` (that file imports `from app.main import app` only).
-3. **Build** — `pyproject.toml` runs `python build.py`, which copies `frontend/*` → **`public/`** so the HTML/JS/CSS are deployed (Vercel serves `public/**` from the edge; the Python app does not mount static files when `VERCEL` / `VERCEL_ENV` is set).
+3. **Build** — `pyproject.toml` runs `python build.py`, which copies `frontend/*` → **`public/`**. On Vercel, the app **mounts `public/`** in FastAPI so `/` serves the UI (see main app section above).
 4. **Environment variables** — In the Vercel project dashboard, set **`ANTHROPIC_API_KEY`** (and optionally **`CLAUDE_MODEL`**). Do **not** rely on committing `backend/.env`.
 5. **Data persistence** — Serverless functions have **no durable disk**. Profile and conversation JSON files are written under **`/tmp/pa-data`** when Vercel env is detected, which is **ephemeral** (can disappear between cold starts). For real persistence, add an external store (e.g. Vercel KV, Postgres, or Blob) and point **`DATA_DIR`** at a mounted path if you add one later.
 
@@ -107,7 +107,7 @@ Use **`vercel dev`** to emulate the platform locally if needed.
 
 ### Limitations on Vercel
 
-- Long **SSE** streams may hit [function duration limits](https://vercel.com/docs/functions/limitations) depending on your plan.
+- Long Claude replies may hit [function duration limits](https://vercel.com/docs/functions/limitations) depending on your plan.
 - **`public/`** is listed in `.gitignore`; it is produced by **`build.py`** on each deploy.
 
 ## Security notes

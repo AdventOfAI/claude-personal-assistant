@@ -7,21 +7,25 @@ if str(_backend_dir) not in sys.path:
     sys.path.insert(0, str(_backend_dir))
 
 import asyncio
-import json
 import os
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import TypeAdapter
 
 from app.config import settings
 from app.conversation_store import ConversationStore
 from app.file_context import extract_text
-from app.llm import stream_chat
+from app.llm import complete_chat
 from app.profile_store import ProfileStore
-from app.schemas import ChatMessage, ConversationResponse, ProfilePutRequest, UserProfile
+from app.schemas import (
+    ChatMessage,
+    ChatResponse,
+    ConversationResponse,
+    ProfilePutRequest,
+    UserProfile,
+)
 
 app = FastAPI(title="Personalised Assistant")
 
@@ -47,10 +51,6 @@ _messages_adapter = TypeAdapter(list[ChatMessage])
 
 # Starlette default per-part limit is 1MB for non-file fields; allow larger JSON transcripts.
 _FORM_MAX_PART = 16 * 1024 * 1024
-
-
-def _sse(obj: dict) -> str:
-    return f"data: {json.dumps(obj, ensure_ascii=False)}\n\n"
 
 
 @app.get("/api/health")
@@ -80,8 +80,8 @@ def clear_conversation(client_id: str = "default") -> dict[str, str]:
     return {"status": "cleared"}
 
 
-@app.post("/api/chat/stream")
-async def chat_stream(request: Request) -> StreamingResponse:
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat(request: Request) -> ChatResponse:
     try:
         form = await request.form(max_part_size=_FORM_MAX_PART)
     except Exception as e:
@@ -126,31 +126,16 @@ async def chat_stream(request: Request) -> StreamingResponse:
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
 
-    def event_stream():
-        yield _sse({"type": "start"})
-        full_reply = ""
-        try:
-            for chunk in stream_chat(profile, parsed, file_text, file_fname):
-                if chunk:
-                    full_reply += chunk
-                    yield _sse({"type": "token", "text": chunk})
-            yield _sse({"type": "done"})
-            assistant_msg = ChatMessage(role="assistant", content=full_reply.strip())
-            conversations.save(client_id, [*parsed, assistant_msg])
-        except ValueError as e:
-            yield _sse({"type": "error", "message": str(e)})
-        except Exception:
-            yield _sse({"type": "error", "message": "Claude request failed"})
+    try:
+        text = await asyncio.to_thread(complete_chat, profile, parsed, file_text, file_fname)
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    except Exception:
+        raise HTTPException(status_code=502, detail="Claude request failed") from e
 
-    return StreamingResponse(
-        event_stream(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
+    assistant_msg = ChatMessage(role="assistant", content=text)
+    conversations.save(client_id, [*parsed, assistant_msg])
+    return ChatResponse(message=assistant_msg)
 
 
 if _VERCEL and PUBLIC_DIR.is_dir():

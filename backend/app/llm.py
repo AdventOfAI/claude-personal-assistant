@@ -1,5 +1,3 @@
-from collections.abc import Iterator
-
 from anthropic import Anthropic
 
 from app.config import settings
@@ -37,12 +35,12 @@ def _with_file_context(system: str, filename: str, file_text: str) -> str:
     )
 
 
-def stream_chat(
+def complete_chat(
     profile: UserProfile,
     messages: list[ChatMessage],
     file_text: str | None = None,
     file_filename: str | None = None,
-) -> Iterator[str]:
+) -> str:
     if not settings.anthropic_api_key:
         raise ValueError("ANTHROPIC_API_KEY is not set")
 
@@ -52,12 +50,12 @@ def stream_chat(
         system = _with_file_context(system, file_filename, file_text)
     api_messages = [{"role": m.role, "content": m.content} for m in messages]
 
-    with client.messages.stream(
+    response = client.messages.create(
         model=settings.claude_model,
         max_tokens=4096,
         system=system,
         messages=api_messages,
-    ) as stream:
-        for text in stream.text_stream:
-            if text:
-                yield text
+    )
+
+    text_blocks = [b.text for b in response.content if b.type == "text"]
+    return "".join(text_blocks).strip()

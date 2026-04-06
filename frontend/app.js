@@ -95,15 +95,16 @@ function appendMessage(role, content) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-/** @returns {HTMLElement} body element to stream into */
-function appendAssistantShell() {
+/** @returns {HTMLElement} body element for assistant reply */
+function appendAssistantPlaceholder() {
   const wrap = document.createElement("div");
   wrap.className = "msg assistant";
   const label = document.createElement("div");
   label.className = "label";
   label.textContent = "Assistant";
   const body = document.createElement("div");
-  body.className = "msg-body md";
+  body.className = "msg-body md typing";
+  body.textContent = "Thinking…";
   wrap.appendChild(label);
   wrap.appendChild(body);
   messagesEl.appendChild(wrap);
@@ -124,65 +125,6 @@ function setFileUI() {
   }
 }
 
-/**
- * @param {Response} response
- * @param {(text: string) => void} onToken
- * @param {() => void} onDone
- * @param {(message: string) => void} onError
- */
-async function readSSE(response, onToken, onDone, onError) {
-  const reader = response.body?.getReader();
-  if (!reader) {
-    onError("No response body");
-    return;
-  }
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let failed = false;
-
-  const fail = (msg) => {
-    if (failed) return;
-    failed = true;
-    onError(msg);
-  };
-
-  const processBlock = (block) => {
-    for (const line of block.split("\n")) {
-      if (!line.startsWith("data: ")) continue;
-      let data;
-      try {
-        data = JSON.parse(line.slice(6));
-      } catch {
-        continue;
-      }
-      if (data.type === "start") {
-        /* keep-alive; connection established before PDF/LLM work */
-      } else if (data.type === "token" && data.text) onToken(data.text);
-      else if (data.type === "done") {
-        if (!failed) onDone();
-      } else if (data.type === "error") fail(data.message || "Error");
-    }
-  };
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (failed) break;
-      if (value) buffer += decoder.decode(value, { stream: true });
-      const parts = buffer.split("\n\n");
-      buffer = parts.pop() ?? "";
-      for (const p of parts) {
-        if (p.trim()) processBlock(p);
-        if (failed) break;
-      }
-      if (done) break;
-    }
-    if (!failed && buffer.trim()) processBlock(buffer);
-  } catch (e) {
-    fail(String(e));
-  }
-}
-
 async function sendMessage() {
   const text = userInput.value.trim();
   if (!text) return;
@@ -198,8 +140,7 @@ async function sendMessage() {
 
   sendBtn.disabled = true;
 
-  const bodyEl = appendAssistantShell();
-  let full = "";
+  const bodyEl = appendAssistantPlaceholder();
 
   const fd = new FormData();
   fd.append("messages", JSON.stringify(transcript));
@@ -207,7 +148,7 @@ async function sendMessage() {
   if (fileToSend) fd.append("file", fileToSend, fileToSend.name);
 
   try {
-    const r = await fetch("/api/chat/stream", {
+    const r = await fetch("/api/chat", {
       method: "POST",
       body: fd,
     });
@@ -221,38 +162,24 @@ async function sendMessage() {
           : Array.isArray(detail)
             ? detail.map((d) => d.msg || d).join("; ")
             : r.statusText;
-      bodyEl.classList.remove("md");
+      bodyEl.classList.remove("md", "typing");
       bodyEl.textContent = `Error: ${msg}`;
       transcript.pop();
       return;
     }
 
-    let streamError = false;
-    await readSSE(
-      r,
-      (t) => {
-        full += t;
-        bodyEl.innerHTML = renderAssistantMarkdown(full);
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-      },
-      () => {},
-      (err) => {
-        streamError = true;
-        bodyEl.classList.remove("md");
-        bodyEl.textContent = `Error: ${err}`;
-        transcript.pop();
-      },
-    );
-
-    if (!streamError) {
-      transcript.push({ role: "assistant", content: full });
-      if (!full) {
-        bodyEl.classList.remove("md");
-        bodyEl.textContent = "(empty reply)";
-      }
+    const data = await r.json();
+    const full = data.message?.content ?? "";
+    bodyEl.classList.remove("typing");
+    if (!full) {
+      bodyEl.classList.remove("md");
+      bodyEl.textContent = "(empty reply)";
+    } else {
+      bodyEl.innerHTML = renderAssistantMarkdown(full);
     }
+    transcript.push({ role: "assistant", content: full });
   } catch (e) {
-    bodyEl.classList.remove("md");
+    bodyEl.classList.remove("md", "typing");
     bodyEl.textContent = `Network error: ${String(e)}`;
     transcript.pop();
   } finally {
