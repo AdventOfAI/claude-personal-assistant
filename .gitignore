@@ -1,0 +1,10 @@
+# Local environment (secrets); never commit
+.env
+backend/.env
+
+backend/data/
+backend/.venv/
+__pycache__/
+*.pyc
+.Python
+.DS_Store

@@ -1,0 +1,470 @@
+:root {
+  --bg: #0f1115;
+  --surface: #171a21;
+  --border: #2a303c;
+  --text: #e8eaed;
+  --muted: #8b939e;
+  --accent: #c4a574;
+  --accent-dim: #8a7355;
+  --user-bubble: #1e2430;
+  --assistant-bubble: #141820;
+  --radius: 12px;
+  --font: "DM Sans", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font);
+  background: radial-gradient(ellipse 120% 80% at 50% -20%, #1a1f2e 0%, var(--bg) 55%);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  min-height: 100%;
+  padding: 1.25rem 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* When profile panel is closed, let the shell and chat use most of the viewport */
+.app:has(#settings-panel[hidden]) {
+  max-width: min(96vw, 1480px);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, var(--accent) 0%, var(--accent-dim) 100%);
+  box-shadow: 0 4px 24px rgba(196, 165, 116, 0.25);
+}
+
+.brand h1 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.tagline {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.layout {
+  display: grid;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Single visible column: chat spans full width (hidden aside must not reserve the sidebar track) */
+.layout:has(#settings-panel[hidden]) {
+  grid-template-columns: 1fr;
+}
+
+.layout:has(#settings-panel:not([hidden])) {
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+}
+
+@media (max-width: 840px) {
+  .layout:has(#settings-panel:not([hidden])) {
+    grid-template-columns: 1fr;
+  }
+
+  .settings:not([hidden]) {
+    order: -1;
+  }
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.15rem;
+}
+
+.settings h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.hint {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+
+.field span {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 3.5rem;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: 1px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.status {
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.chat-column {
+  display: flex;
+  flex-direction: column;
+  min-height: min(70vh, 720px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.layout:has(#settings-panel[hidden]) .chat-column {
+  min-height: max(min(70vh, 720px), calc(100vh - 10rem));
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.msg {
+  max-width: min(100%, 720px);
+  padding: 0.75rem 0.95rem;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+.msg.user .msg-body {
+  white-space: pre-wrap;
+}
+
+.msg.assistant .msg-body.md {
+  white-space: normal;
+}
+
+.msg.user {
+  align-self: flex-end;
+  background: var(--user-bubble);
+  border: 1px solid var(--border);
+}
+
+.msg.assistant {
+  align-self: flex-start;
+  background: var(--assistant-bubble);
+  border: 1px solid var(--border);
+}
+
+.msg .label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
+/* Assistant Markdown */
+.msg.assistant .msg-body.md :first-child {
+  margin-top: 0;
+}
+
+.msg.assistant .msg-body.md :last-child {
+  margin-bottom: 0;
+}
+
+.msg.assistant .msg-body.md h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0.85rem 0 0.45rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.msg.assistant .msg-body.md h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0.8rem 0 0.4rem;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.msg.assistant .msg-body.md h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0.65rem 0 0.35rem;
+  line-height: 1.35;
+}
+
+.msg.assistant .msg-body.md h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0.55rem 0 0.3rem;
+}
+
+.msg.assistant .msg-body.md p {
+  margin: 0.5rem 0;
+}
+
+.msg.assistant .msg-body.md ul,
+.msg.assistant .msg-body.md ol {
+  margin: 0.5rem 0;
+  padding-left: 1.35rem;
+}
+
+.msg.assistant .msg-body.md li {
+  margin: 0.25rem 0;
+}
+
+.msg.assistant .msg-body.md li > p {
+  margin: 0.2rem 0;
+}
+
+.msg.assistant .msg-body.md strong {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.msg.assistant .msg-body.md em {
+  font-style: italic;
+}
+
+.msg.assistant .msg-body.md code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.12em 0.4em;
+  border-radius: 4px;
+}
+
+.msg.assistant .msg-body.md pre {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  overflow-x: auto;
+  margin: 0.55rem 0;
+  line-height: 1.45;
+}
+
+.msg.assistant .msg-body.md pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.msg.assistant .msg-body.md blockquote {
+  margin: 0.55rem 0;
+  padding: 0.15rem 0 0.15rem 0.85rem;
+  border-left: 3px solid var(--accent-dim);
+  color: var(--muted);
+}
+
+.msg.assistant .msg-body.md hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.85rem 0;
+}
+
+.msg.assistant .msg-body.md a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.msg.assistant .msg-body.md table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.55rem 0;
+  font-size: 0.9rem;
+}
+
+.msg.assistant .msg-body.md th,
+.msg.assistant .msg-body.md td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.55rem;
+  text-align: left;
+}
+
+.msg.assistant .msg-body.md th {
+  background: rgba(0, 0, 0, 0.25);
+  font-weight: 600;
+}
+
+.composer-wrap {
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.composer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 0.75rem 0;
+}
+
+.file-status {
+  font-size: 0.8rem;
+  color: var(--muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-status.has-file {
+  color: var(--accent);
+}
+
+.btn-clear-file {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.composer {
+  display: flex;
+  gap: 0.65rem;
+  padding: 0.5rem 0.75rem 0.75rem;
+}
+
+.composer textarea {
+  flex: 1;
+  min-height: 44px;
+  max-height: 160px;
+}
+
+.btn {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  padding: 0.55rem 1rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn.primary {
+  background: linear-gradient(145deg, var(--accent) 0%, #a88962 100%);
+  color: #111;
+}
+
+.btn.primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.btn.primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.btn.ghost:hover {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.typing {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.9rem;
+}

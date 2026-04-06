@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Personalised Assistant</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="brand">
+          <span class="logo" aria-hidden="true"></span>
+          <div>
+            <h1>Personalised Assistant</h1>
+            <p class="tagline">Claude on the backend — tuned to you</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn ghost" id="clear-chat" title="Remove saved messages for this browser">
+            Clear chat
+          </button>
+          <button type="button" class="btn ghost" id="toggle-settings" aria-expanded="false">
+            Profile &amp; preferences
+          </button>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="panel settings" id="settings-panel" hidden>
+          <h2>Your profile</h2>
+          <p class="hint">
+            Saved per browser (client id). Profile fields are injected into the model’s system prompt. Chat history is
+            stored on the server and restored when you return.
+          </p>
+          <label class="field">
+            <span>Display name</span>
+            <input type="text" id="display-name" autocomplete="name" placeholder="e.g. Alex" />
+          </label>
+          <label class="field">
+            <span>Tone</span>
+            <select id="tone">
+              <option value="brief">Brief</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="friendly">Friendly</option>
+              <option value="formal">Formal</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>About you</span>
+            <textarea
+              id="about-me"
+              rows="4"
+              placeholder="Role, interests, timezone — anything that helps the assistant be relevant."
+            ></textarea>
+          </label>
+          <label class="field">
+            <span>Extra instructions</span>
+            <textarea
+              id="extra-instructions"
+              rows="3"
+              placeholder="How you want replies: e.g. prefer bullet lists, avoid jargon, etc."
+            ></textarea>
+          </label>
+          <div class="actions">
+            <button type="button" class="btn primary" id="save-profile">Save profile</button>
+            <span class="status" id="profile-status" role="status"></span>
+          </div>
+        </aside>
+
+        <main class="chat-column">
+          <div class="messages" id="messages" aria-live="polite"></div>
+          <div class="composer-wrap">
+            <div class="composer-toolbar" aria-label="Attachment">
+              <input
+                type="file"
+                id="file-input"
+                class="sr-only"
+                accept=".txt,.md,.csv,.json,.html,.pdf,text/plain,application/pdf"
+              />
+              <button type="button" class="btn ghost" id="attach-btn" title="Attach a file for this message">
+                Attach file
+              </button>
+              <span class="file-status" id="file-status" aria-live="polite"></span>
+              <button type="button" class="btn ghost btn-clear-file" id="clear-file" hidden>
+                Clear
+              </button>
+            </div>
+            <form class="composer" id="composer">
+              <label class="sr-only" for="user-input">Message</label>
+              <textarea
+                id="user-input"
+                rows="1"
+                placeholder="Message…"
+                autocomplete="off"
+              ></textarea>
+              <button type="submit" class="btn primary" id="send-btn">Send</button>
+            </form>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
