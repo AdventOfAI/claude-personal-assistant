@@ -65,9 +65,13 @@ frontend/
   app.js                 # Chat UI, FormData + SSE client
   markdown.js            # Markdown + sanitize (CDN imports)
   styles.css
+index.py                 # Vercel entry: re-exports FastAPI `app`
+build.py                 # Vercel build: copies frontend/ → public/
+pyproject.toml           # Dependencies + Vercel build script
+public/                  # Generated on deploy (gitignored); CDN-served UI on Vercel
 ```
 
-Data files (ignored by git) live under `backend/data/`:
+Data files (ignored by git) live under `backend/data/` locally, or `/tmp/pa-data` on Vercel (see below):
 
 - `profiles/<client_id>.json`
 - `conversations/<client_id>.json`
@@ -81,7 +85,28 @@ Data files (ignored by git) live under `backend/data/`:
 | `GET` / `DELETE` | `/api/conversation?client_id=…` | Load / clear saved messages |
 | `POST` | `/api/chat/stream` | Multipart: `messages` (JSON string), `client_id`, optional `file`; SSE token stream |
 
-Static files are mounted at `/` after API routes.
+Locally, static files are mounted at `/` after API routes. On Vercel, the UI is copied to **`public/`** during build and served by the CDN; the FastAPI app handles **`/api/*`** only.
+
+## Deploying on Vercel
+
+This repo includes a **zero-config style** layout compatible with [FastAPI on Vercel](https://vercel.com/docs/frameworks/backend/fastapi) (CLI **48.1.8+**).
+
+1. **Root entrypoint** — `index.py` adds `backend/` to `sys.path` and exposes the FastAPI `app` object Vercel expects.
+2. **Build** — `pyproject.toml` runs `python build.py`, which copies `frontend/*` → **`public/`** so the HTML/JS/CSS are deployed (Vercel serves `public/**` from the edge; the Python app does not mount static files when `VERCEL` / `VERCEL_ENV` is set).
+3. **Environment variables** — In the Vercel project dashboard, set **`ANTHROPIC_API_KEY`** (and optionally **`CLAUDE_MODEL`**). Do **not** rely on committing `backend/.env`.
+4. **Data persistence** — Serverless functions have **no durable disk**. Profile and conversation JSON files are written under **`/tmp/pa-data`** when Vercel env is detected, which is **ephemeral** (can disappear between cold starts). For real persistence, add an external store (e.g. Vercel KV, Postgres, or Blob) and point **`DATA_DIR`** at a mounted path if you add one later.
+
+```bash
+# From the repo root (after installing the Vercel CLI)
+vercel
+```
+
+Use **`vercel dev`** to emulate the platform locally if needed.
+
+### Limitations on Vercel
+
+- Long **SSE** streams may hit [function duration limits](https://vercel.com/docs/functions/limitations) depending on your plan.
+- **`public/`** is listed in `.gitignore`; it is produced by **`build.py`** on each deploy.
 
 ## Security notes
 

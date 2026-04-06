@@ -1,0 +1,3 @@
+# Root file for tools that expect requirements.txt at repo root (e.g. some Vercel setups).
+# Prefer pyproject.toml for Vercel; local dev can still use backend/requirements.txt
+-r backend/requirements.txt

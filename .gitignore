@@ -8,3 +8,6 @@ __pycache__/
 *.pyc
 .Python
 .DS_Store
+
+# Vercel build output (copied from frontend/)
+public/
