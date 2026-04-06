@@ -1,7 +1,14 @@
+# When imported as `backend.app.main`, `from app.*` needs `backend/` on sys.path.
+import sys
+from pathlib import Path
+
+_backend_dir = Path(__file__).resolve().parent.parent
+if str(_backend_dir) not in sys.path:
+    sys.path.insert(0, str(_backend_dir))
+
 import asyncio
 import json
 import os
-from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware

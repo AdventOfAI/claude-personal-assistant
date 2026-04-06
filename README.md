@@ -65,7 +65,6 @@ frontend/
   app.js                 # Chat UI, FormData + SSE client
   markdown.js            # Markdown + sanitize (CDN imports)
   styles.css
-index.py                 # Vercel entry: re-exports FastAPI `app`
 build.py                 # Vercel build: copies frontend/ → public/
 pyproject.toml           # Dependencies + Vercel build script
 public/                  # Generated on deploy (gitignored); CDN-served UI on Vercel
@@ -91,7 +90,7 @@ Locally, static files are mounted at `/` after API routes. On Vercel, the UI is 
 
 This repo includes a **zero-config style** layout compatible with [FastAPI on Vercel](https://vercel.com/docs/frameworks/backend/fastapi) (CLI **48.1.8+**).
 
-1. **Root entrypoint** — `main.py` (and `index.py` as a shim) adds `backend/` to `sys.path` and exposes the FastAPI `app`. **`pyproject.toml`** includes **`[project.scripts] app = "main:app"`** so Vercel can resolve the app explicitly.
+1. **Root entrypoint** — **`main.py`** adds `backend/` to `sys.path` and exposes the FastAPI `app`. **`pyproject.toml`** includes **`[project.scripts] app = "main:app"`** so Vercel can resolve the app explicitly.
 2. **Project root** — In the Vercel dashboard, set **Root Directory** to the **repository root** (where `main.py` and `pyproject.toml` live), **not** `backend`. If you must use Root Directory `backend`, use **`backend/main.py`** as the file that defines `app` (that file imports `from app.main import app` only).
 3. **Build** — `pyproject.toml` runs `python build.py`, which copies `frontend/*` → **`public/`** so the HTML/JS/CSS are deployed (Vercel serves `public/**` from the edge; the Python app does not mount static files when `VERCEL` / `VERCEL_ENV` is set).
 4. **Environment variables** — In the Vercel project dashboard, set **`ANTHROPIC_API_KEY`** (and optionally **`CLAUDE_MODEL`**). Do **not** rely on committing `backend/.env`.
