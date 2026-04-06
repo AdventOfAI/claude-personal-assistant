@@ -1,0 +1,21 @@
+{
+    "rewrites": [
+      { "source": "/api/(.*)", "destination": "/api/index.py" },
+      { "source": "/(.*)", "destination": "/frontend/$1" }
+    ]
+  }
+  ```
+  
+  **3. Make sure `backend/__init__.py` exists** — I can see it does from your screenshot, so you're good there.
+  
+  **4. Move your `requirements.txt` to the root** — you have one inside `backend/` but Vercel needs it at the project root. You already have one at root so just make sure it has all the dependencies.
+  
+  Your final root structure should look like:
+  ```
+  /api
+    index.py        ← new
+  /backend
+  /frontend
+  vercel.json       ← new
+  requirements.txt  ← already exists
+  main.py           ← can leave or delete, Vercel won't use it

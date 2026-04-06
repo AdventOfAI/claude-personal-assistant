@@ -38,8 +38,9 @@ conversations = ConversationStore(settings.data_dir / "conversations")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
+PUBLIC_DIR = PROJECT_ROOT / "public"
 
-# On Vercel, static UI is served from public/ via the CDN; do not mount StaticFiles here.
+# On Vercel, requests often hit the Python app first; if we do not mount static files, `/` has no route → 404.
 _VERCEL = bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
 
 _messages_adapter = TypeAdapter(list[ChatMessage])
@@ -152,5 +153,7 @@ async def chat_stream(request: Request) -> StreamingResponse:
     )
 
 
-if not _VERCEL and FRONTEND_DIR.is_dir():
+if _VERCEL and PUBLIC_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=str(PUBLIC_DIR), html=True), name="public")
+elif not _VERCEL and FRONTEND_DIR.is_dir():
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")

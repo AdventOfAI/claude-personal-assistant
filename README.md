@@ -84,7 +84,7 @@ Data files (ignored by git) live under `backend/data/` locally, or `/tmp/pa-data
 | `GET` / `DELETE` | `/api/conversation?client_id=…` | Load / clear saved messages |
 | `POST` | `/api/chat/stream` | Multipart: `messages` (JSON string), `client_id`, optional `file`; SSE token stream |
 
-Locally, static files are mounted at `/` after API routes. On Vercel, the UI is copied to **`public/`** during build and served by the CDN; the FastAPI app handles **`/api/*`** only.
+Locally, static files are mounted from **`frontend/`** after API routes. On Vercel, **`build.py`** copies assets to **`public/`**, and the app **mounts `public/`** when `VERCEL` is set (otherwise `/` would hit FastAPI with no route and return **404**). The FastAPI app still handles **`/api/*`** first.
 
 ## Deploying on Vercel
 
