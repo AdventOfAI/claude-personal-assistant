@@ -14,5 +14,9 @@ dependencies = [
     "python-multipart>=0.0.9",
 ]
 
+[project.scripts]
+# Tells Vercel where the FastAPI `app` lives (see Vercel FastAPI docs).
+app = "main:app"
+
 [tool.vercel.scripts]
 build = "python build.py"

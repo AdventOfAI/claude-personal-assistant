@@ -91,10 +91,13 @@ Locally, static files are mounted at `/` after API routes. On Vercel, the UI is 
 
 This repo includes a **zero-config style** layout compatible with [FastAPI on Vercel](https://vercel.com/docs/frameworks/backend/fastapi) (CLI **48.1.8+**).
 
-1. **Root entrypoint** — `index.py` adds `backend/` to `sys.path` and exposes the FastAPI `app` object Vercel expects.
-2. **Build** — `pyproject.toml` runs `python build.py`, which copies `frontend/*` → **`public/`** so the HTML/JS/CSS are deployed (Vercel serves `public/**` from the edge; the Python app does not mount static files when `VERCEL` / `VERCEL_ENV` is set).
-3. **Environment variables** — In the Vercel project dashboard, set **`ANTHROPIC_API_KEY`** (and optionally **`CLAUDE_MODEL`**). Do **not** rely on committing `backend/.env`.
-4. **Data persistence** — Serverless functions have **no durable disk**. Profile and conversation JSON files are written under **`/tmp/pa-data`** when Vercel env is detected, which is **ephemeral** (can disappear between cold starts). For real persistence, add an external store (e.g. Vercel KV, Postgres, or Blob) and point **`DATA_DIR`** at a mounted path if you add one later.
+1. **Root entrypoint** — `main.py` (and `index.py` as a shim) adds `backend/` to `sys.path` and exposes the FastAPI `app`. **`pyproject.toml`** includes **`[project.scripts] app = "main:app"`** so Vercel can resolve the app explicitly.
+2. **Project root** — In the Vercel dashboard, set **Root Directory** to the **repository root** (where `main.py` and `pyproject.toml` live), **not** `backend`. If you must use Root Directory `backend`, use **`backend/main.py`** as the file that defines `app` (that file imports `from app.main import app` only).
+3. **Build** — `pyproject.toml` runs `python build.py`, which copies `frontend/*` → **`public/`** so the HTML/JS/CSS are deployed (Vercel serves `public/**` from the edge; the Python app does not mount static files when `VERCEL` / `VERCEL_ENV` is set).
+4. **Environment variables** — In the Vercel project dashboard, set **`ANTHROPIC_API_KEY`** (and optionally **`CLAUDE_MODEL`**). Do **not** rely on committing `backend/.env`.
+5. **Data persistence** — Serverless functions have **no durable disk**. Profile and conversation JSON files are written under **`/tmp/pa-data`** when Vercel env is detected, which is **ephemeral** (can disappear between cold starts). For real persistence, add an external store (e.g. Vercel KV, Postgres, or Blob) and point **`DATA_DIR`** at a mounted path if you add one later.
+
+If you still see **“FastAPI `app` must be importable from a top-level module”**, confirm **Root Directory** is the repo root (or use **`backend/main.py`** with Root Directory `backend`), and that **`[project.scripts] app = "main:app"`** is in **`pyproject.toml`**.
 
 ```bash
 # From the repo root (after installing the Vercel CLI)
